@@ -56,7 +56,8 @@ int main(){
     std::vector<Aresta*> arestas;
 
     int n, m;
-    std::cin >> n >> m;
+    scanf("%d%d", &n, &m);
+    //std::cin >> n >> m;
 
     for(int i = 0; i < n; i++){
         vertices.push_back(new Vertice(i));
@@ -64,17 +65,19 @@ int main(){
 
     for(int i = 0; i < m; i++){
         int id1, id2;
-        std::cin >> id1 >> id2;
+        scanf("%d%d", &id1, &id2);
+        //std::cin >> id1 >> id2;
 
         int ano, tempo, custo;
-        std::cin >> ano >> tempo >> custo;
+        scanf("%d%d%d", &ano, &tempo, &custo);
+        //std::cin >> ano >> tempo >> custo;
 
         Aresta* aresta = new Aresta(vertices[id1 - 1], vertices[id2 - 1], ano, tempo, custo);
         Aresta* arestaInversa = new Aresta(vertices[id2 - 1], vertices[id1 - 1], ano, tempo, custo);
 
         vertices[id1 - 1]->lista_arestas.push_back(aresta);
         vertices[id2 - 1]->lista_arestas.push_back(arestaInversa);
-        
+
         arestas.push_back(aresta);
         arestas.push_back(arestaInversa);
     }
