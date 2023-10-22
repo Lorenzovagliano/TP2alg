@@ -84,6 +84,47 @@ public:
 
 };
 
+class DisjointSet {
+public:
+    std::vector<int> parent;
+    std::vector<int> rank;
+
+    DisjointSet(int n) {
+        parent.resize(n);
+        rank.resize(n, 0);
+        for (int i = 0; i < n; i++) {
+            parent[i] = i;
+        }
+    }
+
+    int find(int u) {
+        if (parent[u] != u) {
+            parent[u] = find(parent[u]);
+        }
+        return parent[u];
+    }
+
+    void merge(int x, int y) {
+        x = find(x);
+        y = find(y);
+
+        if (rank[x] > rank[y]) {
+            parent[y] = x;
+        } else {
+            parent[x] = y;
+            if (rank[x] == rank[y]) {
+                rank[y]++;
+            }
+        }
+    }
+};
+
+void ordenarArestas(std::vector<Aresta*>& arestas) {
+    std::sort(arestas.begin(), arestas.end(), [](Aresta* a, Aresta* b) {
+        return a->custo < b->custo;
+    });
+}
+
 struct pair_hash {
     template <class T1, class T2>
     std::size_t operator() (const std::pair<T1, T2>& p) const {
@@ -170,6 +211,48 @@ void DFS(std::vector<Vertice*>& vertices, Vertice* fonte){
             for(int i = 0; i < atual->lista_arestas.size(); i++){
                 pilha.push_back(atual->lista_arestas[i]->v2);
             }
+        }
+    }
+}
+
+void kruskalCusto(std::vector<Vertice*>& vertices, std::vector<Aresta*> arestas, std::vector<Aresta*>& arvore_geradora_minima) {
+    std::sort(arestas.begin(), arestas.end(), [](Aresta* a, Aresta* b) {
+        return a->custo < b->custo;
+    });
+
+    DisjointSet ds(vertices.size());
+
+    for (Aresta* aresta : arestas) {
+        int u = aresta->v1->id;
+        int v = aresta->v2->id;
+
+        int set_u = ds.find(u);
+        int set_v = ds.find(v);
+
+        if (set_u != set_v) {
+            arvore_geradora_minima.push_back(aresta);
+            ds.merge(set_u, set_v);
+        }
+    }
+}
+
+void kruskalAno(std::vector<Vertice*>& vertices, std::vector<Aresta*> arestas, std::vector<Aresta*>& arvore_geradora_minima) {
+    std::sort(arestas.begin(), arestas.end(), [](Aresta* a, Aresta* b) {
+        return a->ano < b->ano;
+    });
+
+    DisjointSet ds(vertices.size());
+
+    for (Aresta* aresta : arestas) {
+        int u = aresta->v1->id;
+        int v = aresta->v2->id;
+
+        int set_u = ds.find(u);
+        int set_v = ds.find(v);
+
+        if (set_u != set_v) {
+            arvore_geradora_minima.push_back(aresta);
+            ds.merge(set_u, set_v);
         }
     }
 }
@@ -301,7 +384,7 @@ int main(){
     }
 
     std::vector<Aresta*> arvore_geradora_minima1;
-    primAno(vertices, arvore_geradora_minima1);
+    kruskalAno(vertices, arestas, arvore_geradora_minima1);
 
     long long menorAno = 0;
     for(Aresta* aresta : arvore_geradora_minima1){
@@ -321,7 +404,7 @@ int main(){
     }
 
     std::vector<Aresta*> arvore_geradora_minima;
-    prim(vertices, arvore_geradora_minima);
+    kruskalCusto(vertices, arestas, arvore_geradora_minima);
 
     long long menorCusto = 0;
     for(int i = 0; i < arvore_geradora_minima.size(); i++){
