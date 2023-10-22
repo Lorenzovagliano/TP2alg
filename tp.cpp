@@ -5,16 +5,18 @@
 #include <queue>
 #include <functional>
 #include <limits>
+#include <unordered_map>
+#include <map>
 
-#define INT_MAX std::numeric_limits<int>::max();
+#define INT_MAX std::numeric_limits<long long>::max();
 
 class Aresta;
 
 class Vertice {
 public:
-    int id;
-    int dist;
-    bool visitado;
+    long long id;
+    long long dist;
+    long long visitado;
     Vertice* pai;
     std::vector<Aresta*> lista_arestas;
 
@@ -25,7 +27,7 @@ public:
         this->pai = nullptr;
     }
 
-    Vertice(int _id) {
+    Vertice(long long _id) {
         this->id = _id;
         this->dist = INT_MAX;
         this->pai = nullptr;
@@ -44,9 +46,9 @@ public:
     Vertice* v1;
     Vertice* v2;
     bool visitada;
-    int ano;
-    int tempo;
-    int custo;
+    long long ano;
+    long long tempo;
+    long long custo;
 
     Aresta() {
         this->v1 = nullptr;
@@ -57,7 +59,7 @@ public:
         this->visitada = false;
     }
 
-    Aresta(Vertice* _v1, Vertice* _v2, int _ano, int _tempo, int _custo) {
+    Aresta(Vertice* _v1, Vertice* _v2, long long _ano, long long _tempo, long long _custo) {
         this->v1 = _v1;
         this->v2 = _v2;
         this->ano = _ano;
@@ -71,7 +73,35 @@ public:
             return a1->custo > a2->custo;
         }
     };
+
 };
+
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator() (const std::pair<T1, T2>& p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+        return h1 ^ h2;
+    }
+};
+
+std::unordered_map<std::pair<Vertice*, Vertice*>, Aresta*, pair_hash> map_arestas;
+
+void adicionarAresta(Aresta* aresta) {
+    // ... código para adicionar a aresta à lista de arestas do vértice ...
+
+    map_arestas[std::make_pair(aresta->v1, aresta->v2)] = aresta;
+    map_arestas[std::make_pair(aresta->v2, aresta->v1)] = aresta;
+}
+
+Aresta* encontrarArestaComVertices(Vertice* u, Vertice* v) {
+    auto it = map_arestas.find(std::make_pair(u, v));
+    if (it != map_arestas.end()) {
+        return it->second;
+    } else {
+        return nullptr;
+    }
+}
 
 void dijkstra(std::vector<Vertice*>& vertices, Vertice* fonte) {
     fonte->dist = 0;
@@ -84,8 +114,8 @@ void dijkstra(std::vector<Vertice*>& vertices, Vertice* fonte) {
         u->visitado = true;
 
         for (Aresta* aresta : u->lista_arestas) {
-            Vertice* v = (aresta->v1 == u) ? aresta->v2 : aresta->v1;
-            if (!v->visitado && u->dist + aresta->tempo < v->dist) {
+            Vertice* v = aresta->v2;
+            if (u->dist + aresta->tempo < v->dist) {
                 v->dist = u->dist + aresta->tempo;
                 v->pai = u;
                 fila_prioridade.push(v);
@@ -94,20 +124,19 @@ void dijkstra(std::vector<Vertice*>& vertices, Vertice* fonte) {
     }
 }
 
-void dijkstraAno(std::vector<Vertice*>& vertices, Vertice* fonte, Vertice* &ultimo) {
+void dijkstraAno(std::vector<Vertice*>& vertices, Vertice* fonte) {
     fonte->dist = 0;
     std::priority_queue<Vertice*, std::vector<Vertice*>, Vertice::Compare> fila_prioridade;
     fila_prioridade.push(fonte);
 
     while (!fila_prioridade.empty()) {
         Vertice* u = fila_prioridade.top();
-        ultimo = u;
         fila_prioridade.pop();
         u->visitado = true;
 
         for (Aresta* aresta : u->lista_arestas) {
-            Vertice* v = (aresta->v1 == u) ? aresta->v2 : aresta->v1;
-            if (!v->visitado && u->dist + aresta->ano < v->dist) {
+            Vertice* v = aresta->v2;
+            if (u->dist + aresta->ano < v->dist) {
                 v->dist = u->dist + aresta->ano;
                 v->pai = u;
                 fila_prioridade.push(v);
@@ -151,21 +180,20 @@ int main(){
     std::vector<Vertice*> vertices;
     std::vector<Aresta*> arestas;
 
-    int n, m;
-    scanf("%d%d", &n, &m);
-    //std::cin >> n >> m;
+    long long n, m;
+    scanf("%lld%lld", &n, &m);
 
     for(int i = 0; i < n; i++){
         vertices.push_back(new Vertice(i));
     }
 
     for(int i = 0; i < m; i++){
-        int id1, id2;
-        scanf("%d%d", &id1, &id2);
+        long long id1, id2;
+        scanf("%lld%lld", &id1, &id2);
         //std::cin >> id1 >> id2;
 
-        int ano, tempo, custo;
-        scanf("%d%d%d", &ano, &tempo, &custo);
+        long long ano, tempo, custo;
+        scanf("%lld%lld%lld", &ano, &tempo, &custo);
         //std::cin >> ano >> tempo >> custo;
 
         Aresta* aresta = new Aresta(vertices[id1 - 1], vertices[id2 - 1], ano, tempo, custo);
@@ -173,6 +201,8 @@ int main(){
 
         vertices[id1 - 1]->lista_arestas.push_back(aresta);
         vertices[id2 - 1]->lista_arestas.push_back(arestaInversa);
+        adicionarAresta(aresta);
+        adicionarAresta(arestaInversa);
 
         arestas.push_back(aresta);
         arestas.push_back(arestaInversa);
@@ -182,14 +212,26 @@ int main(){
     dijkstra(vertices, vertices[0]);
 
     for(int i = 0; i < vertices.size(); i++){
-        std::cout << vertices[i]->id + 1 << ": " << vertices[i]->dist << '\n';
+        std::cout << vertices[i]->dist << '\n';
     }
 
-    int maiorAno = 0;
-    for(Aresta* aresta : arestas){
+    Vertice* v;
+    std::vector<Aresta*> caminhoArestas1;
+    for(int i = 0; i < vertices.size(); i++){
+        for(v = vertices[i]; v != vertices[0]; v = v->pai){
+            for(int i = 0; i < v->pai->lista_arestas.size(); i++){
+                if(v->pai->lista_arestas[i]->v2 == v){
+                    caminhoArestas1.push_back(v->pai->lista_arestas[i]);
+                }
+            }
+        }
+    }
+
+    long long maiorAno = 0;
+    for(Aresta* aresta : caminhoArestas1){
         maiorAno = std::max(maiorAno, aresta->ano);
     }
-    std::cout << "Maior ano: " << maiorAno << '\n';
+    std::cout << maiorAno << '\n';
 
     //2)
     for(int i = 0; i < vertices.size(); i++){
@@ -197,26 +239,25 @@ int main(){
         vertices[i]->visitado = false;
     }
 
-    Vertice* ultimo;
-    dijkstraAno(vertices, vertices[0], ultimo);
+    /*dijkstraAno(vertices, vertices[0]);
 
     Vertice* u;
-    std::vector<Vertice*> caminho;
-    std::vector<Aresta*> caminhoArestas;
-    for(u = ultimo; u != vertices[0]; u = u->pai){
-        caminho.push_back(u);
-        for(int i = 0; i < u->pai->lista_arestas.size(); i++){
-            if(u->pai->lista_arestas[i]->v2 == u){
-                caminhoArestas.push_back(u->pai->lista_arestas[i]);
+    std::vector<Aresta*> caminhoArestas2;
+    for(int i = 0; i < vertices.size(); i++){
+        for(u = vertices[i]; u != vertices[0]; u = u->pai){
+            for(int i = 0; i < u->pai->lista_arestas.size(); i++){
+                if(u->pai->lista_arestas[i]->v2 == u){
+                    caminhoArestas2.push_back(u->pai->lista_arestas[i]);
+                }
             }
         }
     }
 
-    int menorAno = 0;
-    for(Aresta* aresta : caminhoArestas){
+    long long menorAno = 0;
+    for(Aresta* aresta : caminhoArestas2){
         menorAno = std::max(menorAno, aresta->ano);
     }
-    std::cout << "Menor ano: " << menorAno << '\n';
+    std::cout << menorAno << '\n';*/
 
     //3)
     for(int i = 0; i < vertices.size(); i++){
@@ -227,11 +268,11 @@ int main(){
     std::vector<Aresta*> arvore_geradora_minima;
     prim(vertices, arvore_geradora_minima);
 
-    int menorCusto = 0;
+    long long menorCusto = 0;
     for(int i = 0; i < arvore_geradora_minima.size(); i++){
         menorCusto += arvore_geradora_minima[i]->custo;
     }
-    std::cout << "Menor custo: " << menorCusto << '\n';
+    std::cout << menorCusto << '\n';
 
 
 
