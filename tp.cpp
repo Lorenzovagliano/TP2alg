@@ -239,7 +239,7 @@ int main(){
         vertices[i]->visitado = false;
     }
 
-    /*dijkstraAno(vertices, vertices[0]);
+    dijkstraAno(vertices, vertices[0]);
 
     Vertice* u;
     std::vector<Aresta*> caminhoArestas2;
@@ -257,7 +257,7 @@ int main(){
     for(Aresta* aresta : caminhoArestas2){
         menorAno = std::max(menorAno, aresta->ano);
     }
-    std::cout << menorAno << '\n';*/
+    std::cout << menorAno << '\n';
 
     //3)
     for(int i = 0; i < vertices.size(); i++){
