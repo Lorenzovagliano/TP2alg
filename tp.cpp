@@ -3,142 +3,147 @@
 #include <vector>
 #include <algorithm>
 #include <queue>
+#include <functional>
+#include <limits>
+
+#define INT_MAX std::numeric_limits<int>::max();
 
 class Aresta;
 
-class Vertice{
-    public:
-        int id;
-        int dist;
-        bool visitado;
-        Vertice* pai;
+class Vertice {
+public:
+    int id;
+    int dist;
+    bool visitado;
+    Vertice* pai;
+    std::vector<Aresta*> lista_arestas;
 
-        std::vector<Aresta*> lista_arestas;
-
-        Vertice(){
-            this->id = 0;
-            this->visitado = false;
-            this->dist = NULL;
-            this->pai = nullptr;
-        }
-
-        Vertice(int _id){
-            this->id = _id;
-            this->dist = NULL;
-            this->pai = nullptr;
-            this->visitado = false;
-        }
-
-};
-
-class Aresta{
-    public:
-        Vertice* v1;
-        Vertice* v2;
-        bool visitada;
-
-        int ano;
-        int tempo;
-        int custo;
-
-        Aresta(){
-            this->v1 = nullptr;
-            this->v2 = nullptr;
-            this->ano = 0;
-            this->tempo = 0;
-            this->custo = 0;
-            this->visitada = false;
-        }
-
-        Aresta(Vertice* _v1, Vertice* _v2, int _ano, int _tempo, int _custo){
-            this->v1 = _v1;
-            this->v2 = _v2;
-            this->ano = _ano;
-            this->tempo = _tempo;
-            this->custo = _custo;
-            this->visitada = false;
-        }
-};
-
-class Fila{
-    public:
-        std::vector<Vertice*> vertices;
-
-        Fila(){}
-
-        void push(Vertice* novo){
-            vertices.push_back(novo);
-        }
-
-        Vertice* popMenor(){
-            if(vertices.size() < 2){
-                std::cout << "0 ou 1 VÉRTICES\n";
-                return nullptr;
-            }
-
-            for(int i = 0; i < vertices.size() - 2; i++){
-                if(vertices[i]->dist < vertices[i + 1]->dist){
-                    Vertice* temp = vertices[i + 1];
-                    vertices[i] = vertices[i+1];
-                    vertices[i + 1] = temp;
-                }
-            }
-
-            Vertice* retorno = vertices[vertices.size()];
-            vertices.pop_back();
-
-            return retorno;
-        }
-
-};
-
-struct CompararDistancia{
-    bool operator()(Vertice* const& v1, Vertice* const& v2){
-        return v1->dist > v2->dist;
+    Vertice() {
+        this->id = 0;
+        this->visitado = false;
+        this->dist = INT_MAX;
+        this->pai = nullptr;
     }
+
+    Vertice(int _id) {
+        this->id = _id;
+        this->dist = INT_MAX;
+        this->pai = nullptr;
+        this->visitado = false;
+    }
+
+    struct Compare {
+        bool operator()(const Vertice* v1, const Vertice* v2) {
+            return v1->dist > v2->dist;
+        }
+    };
 };
 
-void dijkstra(std::vector<Vertice*> vertices){
-    for(int i = 0; i < vertices.size(); i++){
-        vertices[i]->dist = 99999999;
+class Aresta {
+public:
+    Vertice* v1;
+    Vertice* v2;
+    bool visitada;
+    int ano;
+    int tempo;
+    int custo;
+
+    Aresta() {
+        this->v1 = nullptr;
+        this->v2 = nullptr;
+        this->ano = 0;
+        this->tempo = 0;
+        this->custo = 0;
+        this->visitada = false;
     }
-    
-    std::priority_queue<Vertice*, std::vector<Vertice*>, CompararDistancia> fila;
 
-    fila.push(vertices[0]);
-    vertices[0]->dist = 0;
+    Aresta(Vertice* _v1, Vertice* _v2, int _ano, int _tempo, int _custo) {
+        this->v1 = _v1;
+        this->v2 = _v2;
+        this->ano = _ano;
+        this->tempo = _tempo;
+        this->custo = _custo;
+        this->visitada = false;
+    }
 
-    while(fila.size() != 0){
-        Vertice* atual = fila.top();
-        std::cout << "ID: " << atual->id + 1 << '\n';
-        fila.pop();
-
-        if(atual->visitado == true){
-            continue;
+    struct Compare {
+        bool operator()(const Aresta* a1, const Aresta* a2) {
+            return a1->custo > a2->custo;
         }
-        atual->visitado = true;
+    };
+};
 
-        for(int i = 0; i < atual->lista_arestas.size(); i++){
-            unsigned long long int tentativeDistance = atual->dist + atual->lista_arestas[i]->tempo;
+void dijkstra(std::vector<Vertice*>& vertices, Vertice* fonte) {
+    fonte->dist = 0;
+    std::priority_queue<Vertice*, std::vector<Vertice*>, Vertice::Compare> fila_prioridade;
+    fila_prioridade.push(fonte);
 
-            if(tentativeDistance < atual->lista_arestas[i]->v2->dist){
-                atual->lista_arestas[i]->v2->dist = tentativeDistance;
-                atual->lista_arestas[i]->v2->pai = atual;
-                std::cout << atual->lista_arestas[i]->v2->id + 1 << ", pai: " << atual->lista_arestas[i]->v2->pai->id + 1 << '\n';
-                fila.push(atual->lista_arestas[i]->v2);
+    while (!fila_prioridade.empty()) {
+        Vertice* u = fila_prioridade.top();
+        fila_prioridade.pop();
+        u->visitado = true;
+
+        for (Aresta* aresta : u->lista_arestas) {
+            Vertice* v = (aresta->v1 == u) ? aresta->v2 : aresta->v1;
+            if (!v->visitado && u->dist + aresta->tempo < v->dist) {
+                v->dist = u->dist + aresta->tempo;
+                v->pai = u;
+                fila_prioridade.push(v);
             }
         }
     }
 }
 
-std::vector<Vertice*> restaurar(Vertice* vertice, Vertice* raiz){
-    std::vector<Vertice*> caminho;
+void dijkstraAno(std::vector<Vertice*>& vertices, Vertice* fonte, Vertice* &ultimo) {
+    fonte->dist = 0;
+    std::priority_queue<Vertice*, std::vector<Vertice*>, Vertice::Compare> fila_prioridade;
+    fila_prioridade.push(fonte);
 
-    for(Vertice* u = vertice; u != raiz; u = vertice->pai){
-        caminho.insert(caminho.begin(), u);
+    while (!fila_prioridade.empty()) {
+        Vertice* u = fila_prioridade.top();
+        ultimo = u;
+        fila_prioridade.pop();
+        u->visitado = true;
+
+        for (Aresta* aresta : u->lista_arestas) {
+            Vertice* v = (aresta->v1 == u) ? aresta->v2 : aresta->v1;
+            if (!v->visitado && u->dist + aresta->ano < v->dist) {
+                v->dist = u->dist + aresta->ano;
+                v->pai = u;
+                fila_prioridade.push(v);
+            }
+        }
+    }
+}
+
+void prim(std::vector<Vertice*>& vertices, std::vector<Aresta*>& arvore_geradora_minima) {
+    std::priority_queue<Aresta*, std::vector<Aresta*>, Aresta::Compare> fila_prioridade;
+    vertices[0]->visitado = true;
+
+    for (Aresta* aresta : vertices[0]->lista_arestas) {
+        fila_prioridade.push(aresta);
     }
 
-    return caminho;
+    while (!fila_prioridade.empty()) {
+        Aresta* aresta = fila_prioridade.top();
+        fila_prioridade.pop();
+
+        if (aresta->v1->visitado && aresta->v2->visitado) {
+            continue;
+        }
+
+        aresta->visitada = true;
+        arvore_geradora_minima.push_back(aresta);
+
+        Vertice* proximo_vertice = (aresta->v1->visitado) ? aresta->v2 : aresta->v1;
+        proximo_vertice->visitado = true;
+
+        for (Aresta* adjacente : proximo_vertice->lista_arestas) {
+            if (!adjacente->visitada) {
+                fila_prioridade.push(adjacente);
+            }
+        }
+    }
 }
 
 int main(){
@@ -173,31 +178,62 @@ int main(){
         arestas.push_back(arestaInversa);
     }
 
-    for(int i = 0; i < arestas.size(); i++){
-        std::cout << arestas[i]->v1->id + 1 << ", " << arestas[i]->v2->id + 1 << '\n';
+    //1)
+    dijkstra(vertices, vertices[0]);
+
+    for(int i = 0; i < vertices.size(); i++){
+        std::cout << vertices[i]->id + 1 << ": " << vertices[i]->dist << '\n';
     }
 
-    dijkstra(vertices);
+    int maiorAno = 0;
+    for(Aresta* aresta : arestas){
+        maiorAno = std::max(maiorAno, aresta->ano);
+    }
+    std::cout << "Maior ano: " << maiorAno << '\n';
 
-    /*for(int i = 0; i < vertices.size(); i++){
-        if(vertices[i]->visitado != true){
-            std::cout << "aaaazn\n";
-            continue;
-        }
+    //2)
+    for(int i = 0; i < vertices.size(); i++){
+        vertices[i]->dist = INT_MAX;
+        vertices[i]->visitado = false;
+    }
 
-        std::cout << "v = " << vertices[i]->id + 1 << ", Pai = " << vertices[i]->pai-> id + 1 << '\n';
-    }*/
+    Vertice* ultimo;
+    dijkstraAno(vertices, vertices[0], ultimo);
 
-    /*for(int i = 0; i < vertices.size(); i++){
-        if(vertices[i]->visitado != true){
-            std::cout << "aaaazn\n";
-            continue;
+    Vertice* u;
+    std::vector<Vertice*> caminho;
+    std::vector<Aresta*> caminhoArestas;
+    for(u = ultimo; u != vertices[0]; u = u->pai){
+        caminho.push_back(u);
+        for(int i = 0; i < u->pai->lista_arestas.size(); i++){
+            if(u->pai->lista_arestas[i]->v2 == u){
+                caminhoArestas.push_back(u->pai->lista_arestas[i]);
+            }
         }
-        std::vector<Vertice*> caminho = restaurar(vertices[i], vertices[0]);
-        for(int j = 0; j < caminho.size(); j++){
-            std::cout << "CAMINHO: " << caminho[j]->id + 1 << ", ";
-        }
-    }*/
+    }
+
+    int menorAno = 0;
+    for(Aresta* aresta : caminhoArestas){
+        menorAno = std::max(menorAno, aresta->ano);
+    }
+    std::cout << "Menor ano: " << menorAno << '\n';
+
+    //3)
+    for(int i = 0; i < vertices.size(); i++){
+        vertices[i]->dist = INT_MAX;
+        vertices[i]->visitado = false;
+    }
+
+    std::vector<Aresta*> arvore_geradora_minima;
+    prim(vertices, arvore_geradora_minima);
+
+    int menorCusto = 0;
+    for(int i = 0; i < arvore_geradora_minima.size(); i++){
+        menorCusto += arvore_geradora_minima[i]->custo;
+    }
+    std::cout << "Menor custo: " << menorCusto << '\n';
+
+
 
     return 0;
 }
